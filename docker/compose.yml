@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  saleup-db:
+    image: postgres:16-alpine
+    container_name: saleup-postgres
+    environment:
+      POSTGRES_USER: london_move
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: saleup
+    ports:
+      - "5432:5432"
+    volumes:
+      - saleup-data:/var/lib/postgresql/data
+      - ./saleup/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+      - ../docs/data/data.csv:/docker-entrypoint-initdb.d/data.csv:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U london_move -d saleup"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  saleup-data:
+
