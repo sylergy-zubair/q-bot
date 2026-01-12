@@ -10,8 +10,9 @@ export function sanitizeSql(rawSql: string, defaultLimit = 50): SanitizedSql {
   const warnings: string[] = [];
 
   sql = stripCommentLines(sql);
-  // Remove trailing semicolons and whitespace more aggressively
-  sql = sql.replace(/;+\s*$/gm, "").trim();
+  // Remove trailing semicolons and whitespace more aggressively (including across newlines)
+  sql = sql.replace(/;+\s*$/gm, "").trim(); // Remove from end of lines
+  sql = sql.replace(/;+\s*$/, "").trim();   // Remove from end of entire string
 
   if (!sql.toUpperCase().startsWith("SELECT")) {
     throw new Error("Only SELECT statements are allowed");
@@ -45,14 +46,17 @@ function stripCommentLines(sql: string): string {
 
 function hasMultipleStatements(sql: string): boolean {
   // Remove string literals to avoid false positives from semicolons in strings
-  const cleaned = sql
+  let cleaned = sql
     .replace(/'[^']*'/g, "") // Remove single-quoted strings
     .replace(/"[^"]*"/g, "") // Remove double-quoted strings
     .replace(/`[^`]*`/g, "") // Remove backtick-quoted strings (MySQL)
     .trim();
   
+  // Remove trailing semicolons one more time after string removal
+  cleaned = cleaned.replace(/;+\s*$/gm, "").trim();
+  cleaned = cleaned.replace(/;+\s*$/, "").trim();
+  
   // After removing trailing semicolons, any remaining semicolon indicates multiple statements
-  // Check if there's a semicolon that's not at the very end (after trimming)
   const semicolonIndex = cleaned.indexOf(";");
   if (semicolonIndex === -1) {
     return false; // No semicolon found
