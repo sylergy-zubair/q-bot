@@ -1,3 +1,4 @@
+import type { FieldDef } from "pg";
 import { pool } from "./pool.js";
 
 export interface QueryExecutionResult {
@@ -15,9 +16,9 @@ export async function executeSelectQuery(sql: string): Promise<QueryExecutionRes
   const client = await pool.connect();
   try {
     const result = await client.query(sql);
-    const fields = result.fields.map((field) => field.name);
+    const fields = result.fields.map((field: FieldDef) => field.name);
     return {
-      rowCount: result.rowCount,
+      rowCount: result.rowCount ?? 0,
       rows: result.rows,
       fields
     };

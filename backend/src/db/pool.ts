@@ -11,7 +11,7 @@ export const pool = new Pool({
     : { rejectUnauthorized: false }
 });
 
-pool.on("error", (error) => {
+pool.on("error", (error: Error) => {
   console.error("Unexpected Postgres error", error);
 });
 
