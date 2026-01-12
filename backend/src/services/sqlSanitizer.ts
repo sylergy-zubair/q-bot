@@ -12,6 +12,13 @@ export function sanitizeSql(rawSql: string, defaultLimit = 50): SanitizedSql {
   // Remove markdown code blocks if present (```sql ... ```)
   sql = sql.replace(/^```[\w]*\n?/g, "").replace(/\n?```$/g, "").trim();
   
+  // Remove LLM stop tokens and special markers ([/s], <|endoftext|>, etc.)
+  sql = sql.replace(/\[\/s\]/g, "").trim();
+  sql = sql.replace(/<\|endoftext\|>/g, "").trim();
+  sql = sql.replace(/<\|stop\|>/g, "").trim();
+  sql = sql.replace(/\[INST\]/g, "").trim();
+  sql = sql.replace(/\[\/INST\]/g, "").trim();
+  
   sql = stripCommentLines(sql);
   // Remove trailing semicolons and whitespace more aggressively (including across newlines)
   sql = sql.replace(/;+\s*$/gm, "").trim(); // Remove from end of lines
@@ -65,12 +72,19 @@ function hasMultipleStatements(sql: string): boolean {
   cleaned = cleaned.replace(/`([^`\\]|\\.)*`/g, ""); // Backtick-quoted strings with escapes
   cleaned = cleaned.trim();
   
+  // Remove LLM stop tokens and markers before checking for semicolons
+  cleaned = cleaned.replace(/\[\/s\]/g, "").trim();
+  cleaned = cleaned.replace(/<\|endoftext\|>/g, "").trim();
+  cleaned = cleaned.replace(/<\|stop\|>/g, "").trim();
+  cleaned = cleaned.replace(/\[INST\]/g, "").trim();
+  cleaned = cleaned.replace(/\[\/INST\]/g, "").trim();
+  
   // Remove trailing semicolons one more time after string removal
   cleaned = cleaned.replace(/;+\s*$/gm, "").trim();
   cleaned = cleaned.replace(/;+\s*$/, "").trim();
   
-  // Also remove any trailing semicolons followed by whitespace/newlines
-  cleaned = cleaned.replace(/;+[\s\n\r]*$/, "").trim();
+  // Also remove any trailing semicolons followed by whitespace/newlines or tokens
+  cleaned = cleaned.replace(/;+[\s\n\r\[\]\/a-z|<>]*$/i, "").trim();
   
   // After removing trailing semicolons, any remaining semicolon indicates multiple statements
   const semicolonIndex = cleaned.indexOf(";");

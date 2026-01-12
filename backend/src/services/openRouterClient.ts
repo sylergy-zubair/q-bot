@@ -127,6 +127,13 @@ function extractSql(data: any): string {
   // Remove any leading/trailing markdown formatting
   sql = sql.replace(/^`+/g, "").replace(/`+$/g, "").trim();
   
+  // Remove LLM stop tokens and special markers ([/s], <|endoftext|>, etc.)
+  sql = sql.replace(/\[\/s\]/g, "").trim();
+  sql = sql.replace(/<\|endoftext\|>/g, "").trim();
+  sql = sql.replace(/<\|stop\|>/g, "").trim();
+  sql = sql.replace(/\[INST\]/g, "").trim();
+  sql = sql.replace(/\[\/INST\]/g, "").trim();
+  
   return sql;
 }
 
