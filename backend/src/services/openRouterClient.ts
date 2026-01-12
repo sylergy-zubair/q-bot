@@ -102,12 +102,12 @@ function extractSql(data: any): string {
 
   const content = message.content;
 
+  let sql = "";
+  
   if (typeof content === "string") {
-    return content.trim();
-  }
-
-  if (Array.isArray(content)) {
-    const text = content
+    sql = content.trim();
+  } else if (Array.isArray(content)) {
+    sql = content
       .map((segment) => {
         if (typeof segment === "string") return segment;
         if (segment && typeof segment === "object" && "text" in segment) {
@@ -116,9 +116,17 @@ function extractSql(data: any): string {
         return "";
       })
       .join("");
-    return text.trim();
+    sql = sql.trim();
+  } else {
+    return "";
   }
 
-  return "";
+  // Remove markdown code blocks if present (```sql ... ``` or ``` ... ```)
+  sql = sql.replace(/^```[\w]*\n?/g, "").replace(/\n?```$/g, "").trim();
+  
+  // Remove any leading/trailing markdown formatting
+  sql = sql.replace(/^`+/g, "").replace(/`+$/g, "").trim();
+  
+  return sql;
 }
 

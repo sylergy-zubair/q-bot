@@ -18,16 +18,21 @@ export async function nlQueryHandler(req: Request, res: Response): Promise<void>
     return;
   }
 
-  try {
-    const schema = await getSchemaMetadata();
-    const formattedSchema = formatSchemaForPrompt(schema);
+      try {
+        const schema = await getSchemaMetadata();
+        const formattedSchema = formatSchemaForPrompt(schema);
 
-    const hfResponse = await generateSqlFromQuestion({
-      question: parsed.data.question,
-      schema: formattedSchema
-    });
+        const hfResponse = await generateSqlFromQuestion({
+          question: parsed.data.question,
+          schema: formattedSchema
+        });
 
-    const sanitized = sanitizeSql(hfResponse.sql);
+        // Log the raw SQL for debugging
+        console.log("Raw SQL from OpenRouter:", JSON.stringify(hfResponse.sql));
+        console.log("Raw SQL length:", hfResponse.sql.length);
+        console.log("Raw SQL (first 200 chars):", hfResponse.sql.substring(0, 200));
+
+        const sanitized = sanitizeSql(hfResponse.sql);
     const execution = await executeSelectQuery(sanitized.sql);
 
     res.json({

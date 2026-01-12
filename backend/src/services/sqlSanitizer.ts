@@ -9,16 +9,26 @@ export function sanitizeSql(rawSql: string, defaultLimit = 50): SanitizedSql {
   let sql = rawSql.trim();
   const warnings: string[] = [];
 
+  // Remove markdown code blocks if present (```sql ... ```)
+  sql = sql.replace(/^```[\w]*\n?/g, "").replace(/\n?```$/g, "").trim();
+  
   sql = stripCommentLines(sql);
   // Remove trailing semicolons and whitespace more aggressively (including across newlines)
   sql = sql.replace(/;+\s*$/gm, "").trim(); // Remove from end of lines
   sql = sql.replace(/;+\s*$/, "").trim();   // Remove from end of entire string
+
+  // Log for debugging
+  console.log("After initial cleanup, SQL length:", sql.length);
+  console.log("After initial cleanup (first 200 chars):", sql.substring(0, 200));
 
   if (!sql.toUpperCase().startsWith("SELECT")) {
     throw new Error("Only SELECT statements are allowed");
   }
 
   if (hasMultipleStatements(sql)) {
+    // Log the SQL that triggered the error
+    console.error("Multiple statements detected. SQL:", JSON.stringify(sql));
+    console.error("SQL length:", sql.length);
     throw new Error("Multiple SQL statements detected");
   }
 
@@ -46,15 +56,21 @@ function stripCommentLines(sql: string): string {
 
 function hasMultipleStatements(sql: string): boolean {
   // Remove string literals to avoid false positives from semicolons in strings
-  let cleaned = sql
-    .replace(/'[^']*'/g, "") // Remove single-quoted strings
-    .replace(/"[^"]*"/g, "") // Remove double-quoted strings
-    .replace(/`[^`]*`/g, "") // Remove backtick-quoted strings (MySQL)
-    .trim();
+  // Use a more robust approach that handles escaped quotes
+  let cleaned = sql;
+  
+  // Remove string literals (handling escaped quotes)
+  cleaned = cleaned.replace(/'([^'\\]|\\.)*'/g, ""); // Single-quoted strings with escapes
+  cleaned = cleaned.replace(/"([^"\\]|\\.)*"/g, ""); // Double-quoted strings with escapes
+  cleaned = cleaned.replace(/`([^`\\]|\\.)*`/g, ""); // Backtick-quoted strings with escapes
+  cleaned = cleaned.trim();
   
   // Remove trailing semicolons one more time after string removal
   cleaned = cleaned.replace(/;+\s*$/gm, "").trim();
   cleaned = cleaned.replace(/;+\s*$/, "").trim();
+  
+  // Also remove any trailing semicolons followed by whitespace/newlines
+  cleaned = cleaned.replace(/;+[\s\n\r]*$/, "").trim();
   
   // After removing trailing semicolons, any remaining semicolon indicates multiple statements
   const semicolonIndex = cleaned.indexOf(";");
@@ -64,7 +80,13 @@ function hasMultipleStatements(sql: string): boolean {
   
   // If semicolon exists and there's non-whitespace content after it, it's multiple statements
   const afterSemicolon = cleaned.substring(semicolonIndex + 1).trim();
-  return afterSemicolon.length > 0;
+  const hasMultiple = afterSemicolon.length > 0;
+  
+  if (hasMultiple) {
+    console.error("Multiple statements detected. After semicolon:", JSON.stringify(afterSemicolon.substring(0, 100)));
+  }
+  
+  return hasMultiple;
 }
 
 function hasLimitClause(sql: string): boolean {
