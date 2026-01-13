@@ -3,6 +3,8 @@ import { QueryForm } from "./components/QueryForm";
 import { SqlPreview } from "./components/SqlPreview";
 import { ResultTable } from "./components/ResultTable";
 import { InsightsPanel } from "./components/InsightsPanel";
+import { QueryChart } from "./components/QueryChart";
+import { ViewToggle, type ViewMode } from "./components/ViewToggle";
 import {
   fetchInsights,
   fetchSchema,
@@ -11,6 +13,7 @@ import {
   type QueryResultPayload,
   type SchemaColumn
 } from "./lib/api";
+import { canRenderChart } from "./lib/ChartDetector";
 import {
   LineChart,
   Line,
@@ -35,6 +38,7 @@ function App(): JSX.Element {
   const [insights, setInsights] = useState<InsightsPayload | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(true);
   const [design, setDesign] = useState<DesignMode>("aurora");
+  const [viewMode, setViewMode] = useState<ViewMode>("both");
 
   useEffect(() => {
     async function loadSchema(): Promise<void> {
@@ -92,6 +96,8 @@ function App(): JSX.Element {
       columns={columns}
       schemaLoading={schemaLoading}
       onSwitchDesign={() => setDesign("cupertino")}
+      viewMode={viewMode}
+      onViewModeChange={setViewMode}
     />
   ) : (
     <CupertinoDashboard
@@ -104,6 +110,8 @@ function App(): JSX.Element {
       columns={columns}
       schemaLoading={schemaLoading}
       onSwitchDesign={() => setDesign("aurora")}
+      viewMode={viewMode}
+      onViewModeChange={setViewMode}
     />
   );
 }
@@ -120,6 +128,8 @@ interface DashboardProps {
   columns: SchemaColumn[];
   schemaLoading: boolean;
   onSwitchDesign: () => void;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
 function AuroraDashboard({
@@ -131,7 +141,9 @@ function AuroraDashboard({
   insightsLoading,
   columns,
   schemaLoading,
-  onSwitchDesign
+  onSwitchDesign,
+  viewMode,
+  onViewModeChange
 }: DashboardProps): JSX.Element {
   const tableGroups = useMemo(() => groupColumnsByTable(columns), [columns]);
   const totalColumns = columns.length;
@@ -205,7 +217,24 @@ function AuroraDashboard({
                       </h2>
                       <span>Rows: {result.result.rowCount}</span>
                     </div>
-                    <ResultTable fields={result.result.fields} rows={result.result.rows} />
+                    <ViewToggle
+                      mode={viewMode}
+                      onToggle={onViewModeChange}
+                      hasChart={canRenderChart(result.result.fields, result.result.rows)}
+                      theme="aurora"
+                    />
+                    {(viewMode === "chart" || viewMode === "both") && (
+                      <div className="mb-4">
+                        <QueryChart
+                          fields={result.result.fields}
+                          rows={result.result.rows}
+                          theme="aurora"
+                        />
+                      </div>
+                    )}
+                    {(viewMode === "table" || viewMode === "both") && (
+                      <ResultTable fields={result.result.fields} rows={result.result.rows} />
+                    )}
                   </div>
                 </div>
               ) : (
@@ -269,7 +298,9 @@ function CupertinoDashboard({
   insightsLoading,
   columns,
   schemaLoading,
-  onSwitchDesign
+  onSwitchDesign,
+  viewMode,
+  onViewModeChange
 }: DashboardProps): JSX.Element {
   const tableGroups = useMemo(() => groupColumnsByTable(columns), [columns]);
   const totalColumns = columns.length;
@@ -298,7 +329,13 @@ function CupertinoDashboard({
         <section className="grid gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <div className="space-y-8">
             <CupertinoQueryPanel onSubmit={onSubmit} disabled={status === "loading"} />
-            <CupertinoResultCard status={status} error={error} result={result} />
+            <CupertinoResultCard
+              status={status}
+              error={error}
+              result={result}
+              viewMode={viewMode}
+              onViewModeChange={onViewModeChange}
+            />
           </div>
           <div className="space-y-8">
             <CupertinoInsightsPanel insights={insights} loading={insightsLoading} />
@@ -402,9 +439,11 @@ interface CupertinoResultCardProps {
   status: QueryStatus;
   error: string | null;
   result: QueryResultPayload | null;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
-function CupertinoResultCard({ status, error, result }: CupertinoResultCardProps): JSX.Element {
+function CupertinoResultCard({ status, error, result, viewMode, onViewModeChange }: CupertinoResultCardProps): JSX.Element {
   return (
     <section className="space-y-5 rounded-[32px] border border-gray-200 bg-white p-8 shadow-2xl shadow-black/5">
       <header className="flex items-center justify-between">
@@ -431,7 +470,24 @@ function CupertinoResultCard({ status, error, result }: CupertinoResultCardProps
               <code>{result.sql}</code>
             </pre>
           </div>
-          <CupertinoResultTable fields={result.result.fields} rows={result.result.rows} />
+          <ViewToggle
+            mode={viewMode}
+            onToggle={onViewModeChange}
+            hasChart={canRenderChart(result.result.fields, result.result.rows)}
+            theme="cupertino"
+          />
+          {(viewMode === "chart" || viewMode === "both") && (
+            <div className="mb-4">
+              <QueryChart
+                fields={result.result.fields}
+                rows={result.result.rows}
+                theme="cupertino"
+              />
+            </div>
+          )}
+          {(viewMode === "table" || viewMode === "both") && (
+            <CupertinoResultTable fields={result.result.fields} rows={result.result.rows} />
+          )}
         </>
       ) : (
         <p className="text-sm text-slate-500">
