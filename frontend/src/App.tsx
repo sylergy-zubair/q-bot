@@ -82,7 +82,11 @@ function App(): JSX.Element {
     } catch (runError: unknown) {
       console.error(runError);
       setStatus("error");
-      setError("Unable to execute query. Check backend logs for details.");
+      // Extract error message from the error
+      const errorMessage = runError instanceof Error 
+        ? runError.message 
+        : "Unable to execute query. Please try again.";
+      setError(errorMessage);
     }
   }
 

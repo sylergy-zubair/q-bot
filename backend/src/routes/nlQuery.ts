@@ -57,6 +57,17 @@ export async function nlQueryHandler(req: Request, res: Response): Promise<void>
     // Provide more detailed error information
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const isOpenRouterError = errorMessage.includes("OpenRouter");
+    const isOutOfScope = errorMessage.includes("I can only help with questions about the data available to me");
+    
+    // Handle out-of-scope questions with a user-friendly response
+    if (isOutOfScope) {
+      res.status(400).json({ 
+        message: errorMessage,
+        error: errorMessage,
+        type: "out_of_scope"
+      });
+      return;
+    }
     
     res.status(500).json({ 
       message: "Failed to generate or execute SQL",

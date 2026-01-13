@@ -43,6 +43,12 @@ export async function generateSqlFromQuestion(payload: PromptInput): Promise<Ope
 
     const sql = extractSql(response.data);
     
+    // Check if the response is an out-of-scope message
+    const outOfScopeMessage = "I can only help with questions about the data available to me. Could you please rephrase your question to focus on the available data?";
+    if (sql.includes(outOfScopeMessage) || sql.toLowerCase().includes("can only help with questions about the data")) {
+      throw new Error(outOfScopeMessage);
+    }
+    
     // Validate that we got SQL back
     if (!sql || sql.trim().length === 0) {
       console.error("OpenRouter returned empty SQL. Response:", JSON.stringify(response.data, null, 2));

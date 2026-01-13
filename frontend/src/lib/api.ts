@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
@@ -61,8 +61,18 @@ export async function fetchSchema(): Promise<SchemaResponse> {
 }
 
 export async function runNaturalLanguageQuery(question: string): Promise<QueryResultPayload> {
-  const response = await api.post<QueryResultPayload>("/nl-query", { question });
-  return response.data;
+  try {
+    const response = await api.post<QueryResultPayload>("/nl-query", { question });
+    return response.data;
+  } catch (error) {
+    // Extract error message from API response
+    if (isAxiosError(error) && error.response?.data) {
+      const errorData = error.response.data as { message?: string; error?: string };
+      const errorMessage = errorData.message || errorData.error || error.message;
+      throw new Error(errorMessage);
+    }
+    throw error;
+  }
 }
 
 export async function fetchInsights(): Promise<InsightsPayload> {
