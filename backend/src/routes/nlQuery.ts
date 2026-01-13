@@ -5,6 +5,7 @@ import { executeSelectQuery } from "../db/query.js";
 import { generateSqlFromQuestion } from "../services/openRouterClient.js";
 import { formatSchemaForPrompt } from "../services/schemaFormatter.js";
 import { sanitizeSql } from "../services/sqlSanitizer.js";
+import { generateInsights } from "../services/insightGenerator.js";
 
 const bodySchema = z.object({
   question: z.string().min(3, "Question must be at least 3 characters long")
@@ -35,10 +36,20 @@ export async function nlQueryHandler(req: Request, res: Response): Promise<void>
         const sanitized = sanitizeSql(hfResponse.sql);
     const execution = await executeSelectQuery(sanitized.sql);
 
+    // Generate insights (async, non-blocking)
+    let insights = null;
+    try {
+      insights = await generateInsights(parsed.data.question, execution);
+    } catch (insightError) {
+      console.error("Failed to generate insights:", insightError);
+      // Continue without insights - don't fail the request
+    }
+
     res.json({
       sql: sanitized.sql,
       warnings: sanitized.warnings,
-      result: execution
+      result: execution,
+      insights: insights
     });
   } catch (error) {
     console.error("Failed to generate or execute SQL", error);

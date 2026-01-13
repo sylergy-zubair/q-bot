@@ -27,6 +27,16 @@ export interface SchemaResponse {
   samples: SchemaSample[];
 }
 
+export interface InsightSummary {
+  summary: string;
+  keyMetrics: Array<{
+    label: string;
+    value: string;
+    trend?: string;
+  }>;
+  insights: string[];
+}
+
 export interface QueryResultPayload {
   sql: string;
   warnings?: string[];
@@ -35,6 +45,7 @@ export interface QueryResultPayload {
     fields: string[];
     rows: Array<Record<string, unknown>>;
   };
+  insights?: InsightSummary;
 }
 
 export interface InsightsPayload {

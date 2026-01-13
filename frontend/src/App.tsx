@@ -5,6 +5,7 @@ import { ResultTable } from "./components/ResultTable";
 import { InsightsPanel } from "./components/InsightsPanel";
 import { QueryChart } from "./components/QueryChart";
 import { ViewToggle, type ViewMode } from "./components/ViewToggle";
+import { ResultSummary } from "./components/ResultSummary";
 import {
   fetchInsights,
   fetchSchema,
@@ -210,6 +211,9 @@ function AuroraDashboard({
                       </ul>
                     </div>
                   ) : null}
+                  {result.insights && (
+                    <ResultSummary insights={result.insights} theme="aurora" />
+                  )}
                   <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
                     <div className="mb-3 flex items-center justify-between text-sm text-white/70">
                       <h2 className="font-semibold uppercase tracking-[0.25em] text-white/60">
@@ -470,6 +474,9 @@ function CupertinoResultCard({ status, error, result, viewMode, onViewModeChange
               <code>{result.sql}</code>
             </pre>
           </div>
+          {result.insights && (
+            <ResultSummary insights={result.insights} theme="cupertino" />
+          )}
           <ViewToggle
             mode={viewMode}
             onToggle={onViewModeChange}
