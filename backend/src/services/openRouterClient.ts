@@ -1,6 +1,7 @@
 import axios from "axios";
 import { env } from "../env.js";
 import { buildPrompt, type PromptInput } from "./promptBuilder.js";
+import { OUT_OF_SCOPE_MESSAGE } from "../constants/messages.js";
 
 export interface OpenRouterResponse {
   sql: string;
@@ -44,9 +45,8 @@ export async function generateSqlFromQuestion(payload: PromptInput): Promise<Ope
     const sql = extractSql(response.data);
     
     // Check if the response is an out-of-scope message
-    const outOfScopeMessage = "I can only help with questions about the data available to me. Could you please rephrase your question to focus on the available data?";
-    if (sql.includes(outOfScopeMessage) || sql.toLowerCase().includes("can only help with questions about the data")) {
-      throw new Error(outOfScopeMessage);
+    if (sql.includes(OUT_OF_SCOPE_MESSAGE) || sql.toLowerCase().includes("can only help with questions about the data")) {
+      throw new Error(OUT_OF_SCOPE_MESSAGE);
     }
     
     // Validate that we got SQL back

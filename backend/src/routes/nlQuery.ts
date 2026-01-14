@@ -6,6 +6,7 @@ import { generateSqlFromQuestion } from "../services/openRouterClient.js";
 import { formatSchemaForPrompt } from "../services/schemaFormatter.js";
 import { sanitizeSql } from "../services/sqlSanitizer.js";
 import { generateInsights } from "../services/insightGenerator.js";
+import { OUT_OF_SCOPE_MESSAGE } from "../constants/messages.js";
 
 const bodySchema = z.object({
   question: z.string().min(3, "Question must be at least 3 characters long")
@@ -57,7 +58,7 @@ export async function nlQueryHandler(req: Request, res: Response): Promise<void>
     // Provide more detailed error information
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const isOpenRouterError = errorMessage.includes("OpenRouter");
-    const isOutOfScope = errorMessage.includes("I can only help with questions about the data available to me");
+    const isOutOfScope = errorMessage.includes(OUT_OF_SCOPE_MESSAGE) || errorMessage.toLowerCase().includes("can only help with questions about the data");
     
     // Handle out-of-scope questions with a user-friendly response
     if (isOutOfScope) {

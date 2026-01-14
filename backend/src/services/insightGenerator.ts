@@ -1,5 +1,6 @@
 import axios from "axios";
 import { env } from "../env.js";
+import { OUT_OF_SCOPE_MESSAGE } from "../constants/messages.js";
 
 export interface QueryResult {
   fields: string[];
@@ -67,7 +68,7 @@ export async function generateInsights(
 Scope and Boundaries:
 You must ONLY analyze and provide insights about the query results provided to you. This system is designed to analyze data from the specific analytics database.
 If asked about topics outside the scope of the provided query results (e.g., general knowledge, unrelated topics, or data not in the results), you must politely decline by responding with:
-"I can only provide insights about the data from this query. Could you please ask a question about the available data?"
+"${OUT_OF_SCOPE_MESSAGE}"
 
 Your task is to:
 1. Write a 2-3 sentence executive summary of the data

@@ -1,3 +1,5 @@
+import { OUT_OF_SCOPE_MESSAGE } from "../constants/messages.js";
+
 export interface PromptInput {
   question: string;
   schema: string;
@@ -10,8 +12,8 @@ export interface PromptOutput {
 }
 
 const RULES = [
-  "Output only SQL with no prose, EXCEPT when the question is outside the scope of the provided database schema.",
-  "If the question cannot be answered using the provided schema, respond with ONLY this exact message (no SQL): 'I can only help with questions about the data in this database. Could you please rephrase your question to focus on the available data?'",
+  "Output only SQL with no prose, EXCEPT when the question is clearly outside the scope of the provided database schema.",
+  `If the question cannot be answered using the provided schema, respond with ONLY this exact message (no SQL): '${OUT_OF_SCOPE_MESSAGE}'`,
   "Use fully qualified table names (schema.table).",
   "Only generate SELECT queries.",
   "Avoid cartesian products; always join on keys.",
@@ -26,9 +28,24 @@ export function buildPrompt({ question, schema, conversation }: PromptInput): Pr
     "",
     "Scope and Boundaries:",
     "You must ONLY answer questions related to the database schema provided. This system is designed to query the specific analytics database described in the schema.",
-    "If a question is outside the scope of this database (e.g., general knowledge, unrelated topics, or questions about data not in the schema), you must politely decline by responding with:",
-    "'I can only help with questions about the data available to me. Could you please rephrase your question to focus on the available data?'",
-    "Do not attempt to answer questions that cannot be answered using the provided schema.",
+    "",
+    "Questions that ARE in scope include:",
+    "- Revenue, sales, orders, and financial metrics (e.g., total revenue, revenue by store, revenue trends)",
+    "- Store performance, locations, and comparisons (e.g., which store has highest revenue, store comparisons)",
+    "- Time-based analysis (e.g., monthly trends, week-over-week changes, seasonal patterns)",
+    "- Menu items, categories, and product performance (e.g., top items, category breakdowns)",
+    "- Customer behavior, channels, and payment methods (e.g., channel mix, payment preferences)",
+    "- Any question that can be answered using the tables and columns in the provided schema",
+    "",
+    "Questions that are OUT of scope include:",
+    "- General knowledge or questions not about the database (e.g., 'What is the capital of France?')",
+    "- Questions about other databases or systems not in the schema",
+    "- Questions that cannot be answered with the provided schema",
+    "",
+    "IMPORTANT: If a question can be answered using the schema (even if it requires aggregation, joins, or date functions), you MUST generate SQL. Only decline if the question is completely unrelated to the database.",
+    "",
+    "If a question is clearly outside the scope, you must politely decline by responding with:",
+    `'${OUT_OF_SCOPE_MESSAGE}'`,
     "",
     "Rules:",
     RULES.map((rule, idx) => `${idx + 1}. ${rule}`).join("\n")
